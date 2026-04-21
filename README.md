@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MYOTT - Production-Ready OTT Platform
+
+MYOTT is a modern, high-performance OTT-style platform built with Next.js 15, TypeScript, and Tailwind CSS.
+
+## Features
+- **Next.js 15 App Router**: Utilizing the latest features of Next.js for optimal performance.
+- **Dark Mode by Default**: Seamless dark theme using `next-themes`.
+- **Production-Ready Structure**: Clean and scalable folder architecture.
+- **Tailwind CSS**: Utility-first styling with custom theme configuration.
+- **TypeScript**: Type safety across the entire codebase.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18.x or later
+- npm or yarn
 
+### Installation
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+### TMDB API Key
+This project requires a TMDB API key to fetch movie and TV show data.
+1. Create an account on [The Movie Database (TMDB)](https://www.themoviedb.org/).
+2. Generate an API Key (v3 auth).
+3. Add your key to `.env.local`:
+   ```env
+   NEXT_PUBLIC_TMDB_API_KEY=your_api_key_here
+   ```
+
+### Running the Project
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to see the result.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Folder Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `src/app`: App router pages and layouts.
+- `src/components`: Reusable UI components.
+  - `ui/`: Base UI primitives (buttons, inputs, etc.).
+  - `layout/`: Layout-specific components like Navbar.
+  - `common/`: Shared components like ThemeProvider.
+- `src/lib`: Utility functions and shared logic.
+- `src/hooks`: Custom React hooks.
+- `src/types`: TypeScript interfaces and types.
+- `src/server`: Server-side logic and API interactions.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tech Stack
+- [Next.js 15](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Lucide React](https://lucide.dev/)
+- [Framer Motion](https://www.framer.com/motion/)
+- [next-themes](https://github.com/pacocoursey/next-themes)
