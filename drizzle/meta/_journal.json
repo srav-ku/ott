@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1776784612336,
+      "tag": "0000_panoramic_ozymandias",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1776788438757,
+      "tag": "0001_steady_reavers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776790055417,
+      "tag": "0002_demonic_captain_stacy",
+      "breakpoints": true
+    }
+  ]
+}

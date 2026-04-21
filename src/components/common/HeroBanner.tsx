@@ -1,8 +1,8 @@
 import { Play, Info } from "lucide-react";
-import type { Movie } from "@/lib/tmdb";
+import type { MediaItem } from "@/lib/normalizeMedia";
 
 interface HeroBannerProps {
-  movie?: Movie | null;
+  movie?: MediaItem | null;
 }
 
 export function HeroBanner({ movie }: HeroBannerProps) {
@@ -10,8 +10,8 @@ export function HeroBanner({ movie }: HeroBannerProps) {
     return <div className="h-[70vh] w-full bg-gray-900 animate-pulse" />;
   }
 
-  const backdropUrl = movie.backdrop_path 
-    ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+  const backdropUrl = movie.backdrop 
+    ? `https://image.tmdb.org/t/p/original${movie.backdrop}`
     : "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=2070&auto=format&fit=crop";
 
   return (
@@ -23,7 +23,7 @@ export function HeroBanner({ movie }: HeroBannerProps) {
           alt={movie.title}
           className="h-full w-full object-cover object-center"
         />
-        {/* Gradients to blend with background */}
+...
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
       </div>

@@ -1,12 +1,16 @@
-import { getMovieDetails, getMovieRecommendations } from "@/lib/tmdb";
 import { ContentRow } from "@/components/common/ContentRow";
-import { Play, Plus } from "lucide-react";
+import { Play, Plus, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
+import { getMediaById, getRecommendations } from "@/services/mediaService";
+import { getRequestContext } from "@cloudflare/next-on-pages";
+
+export const runtime = "edge";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const movie = await getMovieDetails(id);
+  const { env } = getRequestContext();
+  const movie = await getMediaById(id, "movie", env.DB);
   return {
     title: movie ? `${movie.title} - OTT` : "Movie Detail",
   };
@@ -14,27 +18,31 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const movie = await getMovieDetails(id);
+  const { env } = getRequestContext();
 
-  if (!movie) {
+  const movie = await getMediaById(id, "movie", env.DB);
+
+  if (!movie || movie.title === "Unavailable") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-white">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Movie Not Found</h1>
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-4">Unable to load content</h1>
           <Link href="/" className="text-blue-500 hover:underline">Return to Home</Link>
         </div>
       </div>
     );
   }
 
-  const recommendations = await getMovieRecommendations(id);
+  const recommendations = await getRecommendations(id, "movie");
   
-  const backdropUrl = movie.backdrop_path 
-    ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+  const backdropUrl = movie.backdrop 
+    ? `https://image.tmdb.org/t/p/original${movie.backdrop}`
     : "/placeholder-backdrop.jpg";
     
-  const year = movie.release_date ? new Date(movie.release_date).getFullYear() : "N/A";
-  const rating = movie.vote_average ? movie.vote_average.toFixed(1) : "N/A";
+  const releaseDate = movie.release_date;
+  const year = releaseDate ? new Date(releaseDate).getFullYear() : "N/A";
+  const rating = movie.rating !== null ? `${movie.rating}/10` : "N/A";
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0a0a] pb-20">
@@ -46,10 +54,8 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
             alt={movie.title}
             className="h-full w-full object-cover object-center"
           />
-          {/* Dark gradient overlay (left → right + bottom fade) */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent" />
         </div>
 
         <div className="relative h-full flex flex-col justify-end px-6 pb-16 md:px-12 lg:pb-24 w-full md:w-3/4 lg:w-2/3">
@@ -85,12 +91,12 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
       {/* 2. Info Section */}
       <div className="px-6 md:px-12 mb-16 -mt-8 relative z-10">
         <div className="flex flex-wrap gap-3">
-          {movie.genres?.map((g) => (
+          {movie.language?.map((g, index) => (
             <span 
-              key={g.id} 
+              key={index} 
               className="rounded-full bg-white/10 backdrop-blur-sm border border-white/10 px-4 py-1.5 text-xs md:text-sm text-gray-200 font-medium transition-colors hover:bg-white/20"
             >
-              {g.name}
+              {g}
             </span>
           ))}
         </div>

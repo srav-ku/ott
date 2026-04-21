@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `episodes_tmdb_series_id_season_number_episode_number_unique` ON `episodes` (`tmdb_series_id`,`season_number`,`episode_number`);

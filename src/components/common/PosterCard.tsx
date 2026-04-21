@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 interface PosterCardProps {
-  id: number;
+  id: number | string;
   title: string;
   image: string;
   mediaType: "movie" | "tv";

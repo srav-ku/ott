@@ -1,9 +1,9 @@
 import { PosterCard } from "@/components/common/PosterCard";
-import type { Movie } from "@/lib/tmdb";
+import type { MediaItem } from "@/lib/normalizeMedia";
 
 interface ContentRowProps {
   title: string;
-  items: Movie[];
+  items: MediaItem[];
   fallbackMediaType?: "movie" | "tv";
 }
 
@@ -23,14 +23,14 @@ export function ContentRow({ title, items, fallbackMediaType = "movie" }: Conten
         `}} />
         
         {items.map((item) => {
-          if (!item.poster_path) return null;
-          const type = item.media_type || fallbackMediaType;
+          if (!item.poster) return null;
+          const type = item.type || fallbackMediaType;
           return (
             <div key={item.id} className="flex-none">
               <PosterCard 
                 id={item.id}
                 title={item.title} 
-                image={`https://image.tmdb.org/t/p/w500${item.poster_path}`} 
+                image={`https://image.tmdb.org/t/p/w500${item.poster}`} 
                 mediaType={type as "movie" | "tv"}
               />
             </div>
