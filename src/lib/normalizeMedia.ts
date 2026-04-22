@@ -12,7 +12,7 @@ import type {
 type DBMovie = InferSelectModel<typeof movies>;
 type DBEpisode = InferSelectModel<typeof episodes>;
 
-// ─── TMDB image URL helpers (centralized — UI must NOT build URLs) ───────────
+// ─── TMDB image helpers ──────────────────────────────────────────────────────
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
 const FALLBACK_BACKDROP =
@@ -34,17 +34,15 @@ export function tmdbBackdropUrl(
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
 
-// ─── Canonical MediaItem ─────────────────────────────────────────────────────
+// ─── Core Media Type ─────────────────────────────────────────────────────────
 export type MediaItem = {
   id: string | number;
   title: string;
   type: "movie" | "tv";
 
-  // Raw paths
   poster: string | null;
   backdrop: string | null;
 
-  // Ready-to-use URLs (UI must use these only)
   posterUrl: string | null;
   backdropUrl: string;
 
@@ -54,14 +52,14 @@ export type MediaItem = {
   release_date?: string;
   runtime?: number;
 
-  language?: string[];
+  language: string[];
   hasLinks?: boolean;
 
-  // ✅ IMPORTANT: enables dynamic season rendering
+  // 🔥 CRITICAL: dynamic seasons support
   total_seasons?: number;
 };
 
-// ─── Episode & Season Types ──────────────────────────────────────────────────
+// ─── Episode / Season Types ──────────────────────────────────────────────────
 export type EpisodeItem = {
   id: number;
   name: string;
@@ -98,12 +96,18 @@ export function normalizeMovie(item: TMDBMovie): MediaItem {
     backdropUrl: tmdbBackdropUrl(item.backdrop_path),
 
     overview: item.overview || "",
-    rating: item.vote_average ?? null,
+
+    // ✅ safer rating
+    rating:
+      item.vote_average && item.vote_average > 0
+        ? item.vote_average
+        : null,
 
     release_date: item.release_date,
     runtime: item.runtime,
 
-    language: item.genres?.map((g) => g.name),
+    // ✅ always array (never undefined)
+    language: item.genres?.map((g) => g.name) || [],
 
     hasLinks: false,
   };
@@ -122,15 +126,20 @@ export function normalizeTV(item: TMDBTV): MediaItem {
     backdropUrl: tmdbBackdropUrl(item.backdrop_path),
 
     overview: item.overview || "",
-    rating: item.vote_average ?? null,
+
+    rating:
+      item.vote_average && item.vote_average > 0
+        ? item.vote_average
+        : null,
 
     release_date: item.first_air_date,
 
-    language: item.genres?.map((g) => g.name),
+    // ✅ always safe
+    language: item.genres?.map((g) => g.name) || [],
 
     hasLinks: false,
 
-    // ✅ CRITICAL FIX — dynamic seasons support
+    // 🔥 MOST IMPORTANT FIX
     total_seasons: item.number_of_seasons || 1,
   };
 }
@@ -154,11 +163,15 @@ export function normalizeTrendingItem(item: TMDBTrendingItem): MediaItem {
     backdropUrl: tmdbBackdropUrl(item.backdrop_path),
 
     overview: item.overview || "",
-    rating: item.vote_average ?? null,
+
+    rating:
+      item.vote_average && item.vote_average > 0
+        ? item.vote_average
+        : null,
 
     release_date: isMovie ? item.release_date : item.first_air_date,
 
-    language: item.genres?.map((g) => g.name),
+    language: item.genres?.map((g) => g.name) || [],
 
     hasLinks: false,
   };
@@ -166,7 +179,7 @@ export function normalizeTrendingItem(item: TMDBTrendingItem): MediaItem {
 
 // ─── DB Normalizers ──────────────────────────────────────────────────────────
 export function normalizeDBMovie(item: DBMovie): MediaItem {
-  let languages: string[] | undefined;
+  let languages: string[] = [];
 
   if (typeof item.available_languages === "string") {
     try {
@@ -179,13 +192,10 @@ export function normalizeDBMovie(item: DBMovie): MediaItem {
     }
   }
 
-  const type: "movie" | "tv" =
-    item.type === "tv" ? "tv" : "movie";
-
   return {
     id: item.tmdb_id,
     title: item.title,
-    type,
+    type: item.type === "tv" ? "tv" : "movie",
 
     poster: item.poster_path,
     posterUrl: tmdbPosterUrl(item.poster_path ?? null),
@@ -194,13 +204,16 @@ export function normalizeDBMovie(item: DBMovie): MediaItem {
     backdropUrl: tmdbBackdropUrl(item.backdrop_path ?? null),
 
     overview: item.overview ?? "",
-    rating: item.rating ?? null,
+
+    rating:
+      item.rating && item.rating > 0 ? item.rating : null,
 
     language: languages,
+
     hasLinks: item.has_links ?? false,
 
-    // ✅ Map total_seasons from DB back to the normalized object
-    total_seasons: item.total_seasons ?? undefined,
+    // 🔥 CRITICAL: never undefined
+    total_seasons: item.total_seasons ?? 1,
   };
 }
 
