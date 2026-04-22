@@ -22,6 +22,20 @@
       "when": 1776790055417,
       "tag": "0002_demonic_captain_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1776794740427,
+      "tag": "0003_serious_jack_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1776798237958,
+      "tag": "0004_windy_sir_ram",
+      "breakpoints": true
     }
   ]
 }

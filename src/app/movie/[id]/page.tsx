@@ -1,9 +1,10 @@
 import { ContentRow } from "@/components/common/ContentRow";
-import { Play, Plus, AlertCircle } from "lucide-react";
+import { Play, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
 import { getMediaById, getRecommendations } from "@/services/mediaService";
 import { getRequestContext } from "@cloudflare/next-on-pages";
+import { WatchlistButton } from "@/components/ui/WatchlistButton";
 
 export const runtime = "edge";
 
@@ -36,9 +37,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
 
   const recommendations = await getRecommendations(id, "movie");
   
-  const backdropUrl = movie.backdrop 
-    ? `https://image.tmdb.org/t/p/original${movie.backdrop}`
-    : "/placeholder-backdrop.jpg";
+  const backdropUrl = movie.backdropUrl;
     
   const releaseDate = movie.release_date;
   const year = releaseDate ? new Date(releaseDate).getFullYear() : "N/A";
@@ -80,10 +79,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
               <Play className="h-5 w-5 md:h-6 md:w-6 fill-black" />
               Play
             </button>
-            <button className="flex items-center gap-3 rounded bg-gray-500/40 px-8 py-3 text-sm md:text-lg font-bold text-white backdrop-blur-md transition-all hover:bg-gray-500/50 active:scale-95">
-              <Plus className="h-5 w-5 md:h-6 md:w-6" />
-              Watchlist
-            </button>
+            <WatchlistButton tmdbId={movie.id} type="movie" />
           </div>
         </div>
       </div>

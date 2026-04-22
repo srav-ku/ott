@@ -1,0 +1,1 @@
+ALTER TABLE `movies` ADD `total_seasons` integer;

@@ -30,7 +30,7 @@ export function ContentRow({ title, items, fallbackMediaType = "movie" }: Conten
               <PosterCard 
                 id={item.id}
                 title={item.title} 
-                image={`https://image.tmdb.org/t/p/w500${item.poster}`} 
+                image={item.posterUrl as string} 
                 mediaType={type as "movie" | "tv"}
               />
             </div>

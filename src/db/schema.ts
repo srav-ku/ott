@@ -12,6 +12,7 @@ export const movies = sqliteTable('movies', {
   last_updated: integer('last_updated', { mode: 'timestamp' }),
   available_languages: text('available_languages'), // text JSON
   has_links: integer('has_links', { mode: 'boolean' }).default(false),
+  total_seasons: integer('total_seasons'),
 });
 
 export const episodes = sqliteTable('episodes', {
@@ -50,4 +51,29 @@ export const linkQueue = sqliteTable('link_queue', {
   priority_score: integer('priority_score').default(0),
   created_at: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   last_checked_at: integer('last_checked_at', { mode: 'timestamp' }),
+});
+
+export const watchlist = sqliteTable('watchlist', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  user_id: text('user_id').notNull(), // pseudo-user id
+  tmdb_id: text('tmdb_id').notNull(),
+  type: text('type').notNull(), // movie or tv
+  added_at: integer('added_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => {
+  return {
+    unq: unique().on(table.user_id, table.tmdb_id, table.type)
+  };
+});
+
+export const history = sqliteTable('history', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  user_id: text('user_id').notNull(),
+  tmdb_id: text('tmdb_id').notNull(),
+  type: text('type').notNull(), // movie or tv
+  progress: real('progress').notNull().default(0), // percentage
+  last_watched: integer('last_watched', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+}, (table) => {
+  return {
+    unq: unique().on(table.user_id, table.tmdb_id, table.type)
+  };
 });

@@ -24,6 +24,7 @@ import {
   normalizeDBEpisode,
 } from "@/lib/normalizeMedia";
 import { TMDBMovie, TMDBTV } from "@/types/tmdb";
+import { logger } from "@/lib/logger";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -51,9 +52,10 @@ export async function getMediaById(
       const isStale = ageMs > CACHE_TTL_MS;
 
       if (!isStale) {
+        logger.debug(`Cache hit for ${type} ${id}`);
         return normalizeDBMovie(existing);
       }
-      console.log(`[MediaService] Stale cache — refetching ${type}:${id}`);
+      logger.info(`Stale cache — refetching ${type}:${id}`);
     }
 
     // Fetch from TMDB with explicit type narrowing
@@ -77,12 +79,12 @@ export async function getMediaById(
 
     // Fire-and-forget background sync — never blocks response
     syncToDatabase(d1, normalized).catch((err) =>
-      console.error("[MediaService] Sync error:", err)
+      logger.error("Sync error in getMediaById", err)
     );
 
     return normalized;
   } catch (error) {
-    console.error(`[MediaService] getMediaById error (${type}:${id}):`, error);
+    logger.error(`getMediaById error (${type}:${id})`, error);
     return getFallbackMedia(id, type);
   }
 }
@@ -119,12 +121,10 @@ export async function getMediaList(
     }
 
     // TV non-trending lists are not supported by this endpoint set
-    console.warn(
-      `[MediaService] TV list type '${listType}' not supported — returning empty`
-    );
+    logger.warn(`TV list type '${listType}' not supported — returning empty`);
     return [];
   } catch (error) {
-    console.error("[MediaService] getMediaList error:", error);
+    logger.error("getMediaList error", error);
     return [];
   }
 }
@@ -145,7 +145,7 @@ export async function getRecommendations(
       return items.map(normalizeTV);
     }
   } catch (error) {
-    console.error("[MediaService] getRecommendations error:", error);
+    logger.error("getRecommendations error", error);
     return [];
   }
 }
@@ -180,6 +180,7 @@ export async function getTVSeason(
       const isStale = ageMs > CACHE_TTL_MS;
 
       if (!isStale) {
+        logger.debug(`Cache hit for TV:${tvId} S${seasonNumber}`);
         return {
           id: 0, // Season entity not stored separately in DB
           name: `Season ${seasonNumber}`,
@@ -189,9 +190,7 @@ export async function getTVSeason(
           episodes: dbEpisodes.map(normalizeDBEpisode),
         };
       }
-      console.log(
-        `[MediaService] Stale episode cache — refetching TV:${tvId} S${seasonNumber}`
-      );
+      logger.info(`Stale episode cache — refetching TV:${tvId} S${seasonNumber}`);
     }
 
     const rawSeason = await fetchTVSeasonFromTMDB(tvId, seasonNumber);
@@ -203,21 +202,34 @@ export async function getTVSeason(
 
     // Fire-and-forget background sync
     syncEpisodesToDatabase(d1, tvId, normalized).catch((err) =>
-      console.error("[MediaService] Episode sync error:", err)
+      logger.error("Episode sync error", err)
     );
 
     return normalized;
   } catch (error) {
-    console.error(
-      `[MediaService] getTVSeason error (TV:${tvId} S${seasonNumber}):`,
-      error
-    );
+    logger.error(`getTVSeason error (TV:${tvId} S${seasonNumber})`, error);
     throw error; // Re-throw — caller (API route) will handle via safeHandler
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getTVAllSeasons(
+  tvId: string,
+  totalSeasons: number,
+  d1: D1Database
+): Promise<SeasonItem[]> {
+  const promises: Promise<SeasonItem>[] = [];
+  for (let i = 1; i <= totalSeasons; i++) {
+    promises.push(getTVSeason(tvId, i, d1));
+  }
+  const results = await Promise.allSettled(promises);
+  return results
+    .filter((r): r is PromiseFulfilledResult<SeasonItem> => r.status === "fulfilled")
+    .map(r => r.value);
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function syncToDatabase(d1: D1Database, item: MediaItem): Promise<void> {
@@ -233,6 +245,7 @@ async function syncToDatabase(d1: D1Database, item: MediaItem): Promise<void> {
     last_updated:        new Date(),
     available_languages: JSON.stringify(item.language ?? []),
     has_links:           item.hasLinks ?? false,
+    total_seasons:       item.total_seasons,
   };
 
   await db
@@ -248,6 +261,7 @@ async function syncToDatabase(d1: D1Database, item: MediaItem): Promise<void> {
         rating:              row.rating,
         last_updated:        row.last_updated,
         available_languages: row.available_languages,
+        total_seasons:       row.total_seasons,
       },
     })
     .run();
@@ -260,34 +274,40 @@ async function syncEpisodesToDatabase(
 ): Promise<void> {
   const db = getDb(d1);
 
-  for (const ep of season.episodes) {
-    await db
-      .insert(episodes)
-      .values({
-        tmdb_series_id: tmdbSeriesId,
-        season_number:  season.season_number,
-        episode_number: ep.episode_number,
-        title:          ep.name,
-        overview:       ep.overview,
-        still_path:     ep.still_path,
-        vote_average:   ep.vote_average,
-        last_updated:   new Date(),
-      })
-      .onConflictDoUpdate({
-        target: [
-          episodes.tmdb_series_id,
-          episodes.season_number,
-          episodes.episode_number,
-        ],
-        set: {
-          title:        ep.name,
-          overview:     ep.overview,
-          still_path:   ep.still_path,
+  if (!season.episodes.length) return;
+
+  try {
+    for (const ep of season.episodes) {
+      await db
+        .insert(episodes)
+        .values({
+          tmdb_series_id: tmdbSeriesId,
+          season_number: season.season_number,
+          episode_number: ep.episode_number,
+          title: ep.name,
+          overview: ep.overview,
+          still_path: ep.still_path,
           vote_average: ep.vote_average,
           last_updated: new Date(),
-        },
-      })
-      .run();
+        })
+        .onConflictDoUpdate({
+          target: [
+            episodes.tmdb_series_id,
+            episodes.season_number,
+            episodes.episode_number,
+          ],
+          set: {
+            title: ep.name,
+            overview: ep.overview,
+            still_path: ep.still_path,
+            vote_average: ep.vote_average,
+            last_updated: new Date(),
+          },
+        })
+        .run();
+    }
+  } catch (error) {
+    logger.error("Episode sync failed", error);
   }
 }
 

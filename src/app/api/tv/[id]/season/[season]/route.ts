@@ -9,7 +9,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string, season: string }> }
 ) {
-  return safeHandler(async () => {
+  return safeHandler(request, async () => {
     const { id, season } = await params;
     const { env } = getRequestContext();
     

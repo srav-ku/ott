@@ -10,9 +10,7 @@ export function HeroBanner({ movie }: HeroBannerProps) {
     return <div className="h-[70vh] w-full bg-gray-900 animate-pulse" />;
   }
 
-  const backdropUrl = movie.backdrop 
-    ? `https://image.tmdb.org/t/p/original${movie.backdrop}`
-    : "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=2070&auto=format&fit=crop";
+  const backdropUrl = movie.backdropUrl;
 
   return (
     <div className="relative h-[70vh] w-full">

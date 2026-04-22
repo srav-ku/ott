@@ -8,7 +8,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  return safeHandler(async () => {
+  return safeHandler(request, async () => {
     const { id } = await params;
     if (!id) throw new Error("ID is required");
 

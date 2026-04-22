@@ -5,40 +5,68 @@ import {
   TMDBTrendingItem, 
   TMDBResponse 
 } from "@/types/tmdb";
+import { logger } from "./logger";
 
 const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+export class TMDBError extends Error {
+  constructor(message: string, public status?: number) {
+    super(message);
+    this.name = "TMDBError";
+  }
+}
+
+/**
+ * Robust fetch wrapper for TMDB with exponential backoff and timeouts
+ */
 async function fetchFromTMDB<T>(endpoint: string, retries = 2): Promise<T | null> {
   if (!TMDB_API_KEY) {
-    console.error("TMDB API Key missing");
+    logger.error("TMDB API Key missing");
     return null;
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 7000);
+  // Aggressive timeout for external calls to ensure system doesn't hang
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
 
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}${endpoint.includes('?') ? '&' : '?'}api_key=${TMDB_API_KEY}`, {
-      next: { revalidate: 3600 },
+    const separator = endpoint.includes('?') ? '&' : '?';
+    const url = `${BASE_URL}${endpoint}${separator}api_key=${TMDB_API_KEY}`;
+    
+    // We rely entirely on our Cloudflare D1 database for caching.
+    // NextJS native fetch caching is notoriously buggy in local edge dev environments.
+    const response = await fetch(url, {
+      cache: 'no-store',
       signal: controller.signal
     });
 
     if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`TMDB API Error: ${response.statusText}`);
+      if (response.status === 404) {
+        logger.info(`TMDB Resource not found: ${endpoint}`);
+        return null; // Graceful degradation for 404s
+      }
+      
+      // Rates limits (429) should definitely trigger retries
+      throw new TMDBError(`TMDB API Error: ${response.statusText}`, response.status);
     }
 
     return await response.json() as T;
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (retries > 0) {
-      await sleep(500);
+    const isTimeout = error instanceof DOMException && error.name === 'AbortError';
+    const errorMessage = isTimeout ? 'Request timed out' : (error instanceof Error ? error.message : String(error));
+    const status = error instanceof TMDBError ? error.status : undefined;
+    
+    if (retries > 0 && (!status || status === 429 || status >= 500 || isTimeout)) {
+      const waitTime = isTimeout ? 500 : (status === 429 ? 1500 : 800);
+      logger.warn(`TMDB fetch failed, retrying in ${waitTime}ms...`, { endpoint, errorMessage, retriesLeft: retries - 1 });
+      await sleep(waitTime);
       return fetchFromTMDB<T>(endpoint, retries - 1);
     }
-    console.error(`Failed to fetch from TMDB [${endpoint}]:`, errorMessage);
+    
+    logger.error(`Failed to fetch from TMDB after all retries`, error, { endpoint });
     return null;
   } finally {
     clearTimeout(timeoutId);

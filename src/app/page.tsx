@@ -2,13 +2,11 @@ import { HeroBanner } from "@/components/common/HeroBanner";
 import { ContentRow } from "@/components/common/ContentRow";
 import { MediaItem } from "@/lib/normalizeMedia";
 import { getMediaList } from "@/services/mediaService";
-import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = "edge";
 
 export default async function Home() {
-  const { env } = getRequestContext();
-  
+  // We don't need env here currently
   // We can call service layer DIRECTLY from server components for better performance
   // No need for a full HTTP fetch to our own API if we have the service layer
   const [trendingNow, popularMovies, topRated, newReleases] = await Promise.all([
