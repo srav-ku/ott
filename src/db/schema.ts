@@ -13,6 +13,11 @@ export const movies = sqliteTable('movies', {
   available_languages: text('available_languages'), // text JSON
   has_links: integer('has_links', { mode: 'boolean' }).default(false),
   total_seasons: integer('total_seasons'),
+  primary_stream_url: text('primary_stream_url'),
+  extracted_stream_url: text('extracted_stream_url'),
+  stream_type: text('stream_type'), // "direct" | "extracted"
+  stream_expires_at: integer('stream_expires_at', { mode: 'timestamp' }),
+  stream_last_checked: integer('stream_last_checked', { mode: 'timestamp' }),
 });
 
 export const episodes = sqliteTable('episodes', {
@@ -26,6 +31,11 @@ export const episodes = sqliteTable('episodes', {
   still_path: text('still_path'),
   vote_average: real('vote_average'),
   last_updated: integer('last_updated', { mode: 'timestamp' }),
+  primary_stream_url: text('primary_stream_url'),
+  extracted_stream_url: text('extracted_stream_url'),
+  stream_type: text('stream_type'), // "direct" | "extracted"
+  stream_expires_at: integer('stream_expires_at', { mode: 'timestamp' }),
+  stream_last_checked: integer('stream_last_checked', { mode: 'timestamp' }),
 }, (table) => {
   return {
     unq: unique().on(table.tmdb_series_id, table.season_number, table.episode_number)

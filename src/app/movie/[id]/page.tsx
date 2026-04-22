@@ -75,10 +75,10 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
           </p>
 
           <div className="flex flex-wrap items-center gap-4">
-            <button className="flex items-center gap-3 rounded bg-white px-8 py-3 text-sm md:text-lg font-bold text-black transition-all hover:bg-white/90 active:scale-95">
+            <Link href={`/watch/${movie.id}?type=movie`} className="flex items-center gap-3 rounded bg-white px-8 py-3 text-sm md:text-lg font-bold text-black transition-all hover:bg-white/90 active:scale-95">
               <Play className="h-5 w-5 md:h-6 md:w-6 fill-black" />
               Play
-            </button>
+            </Link>
             <WatchlistButton tmdbId={movie.id} type="movie" />
           </div>
         </div>

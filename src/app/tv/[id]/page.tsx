@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { Play } from "lucide-react";
 import { WatchlistButton } from "@/components/ui/WatchlistButton";
 import type { MediaItem, EpisodeItem } from "@/lib/normalizeMedia";
@@ -89,8 +90,8 @@ export default function TVDetailPage() {
           <p className="text-gray-300 mt-4 max-w-3xl line-clamp-3">{tv.overview}</p>
 
           <div className="flex gap-4 mt-6">
-            <button className="bg-white text-black px-6 py-2.5 rounded flex items-center gap-2 font-semibold hover:bg-gray-200 transition">
-              <Play size={20} className="fill-black" /> Play
+            <button onClick={() => window.scrollTo({ top: 600, behavior: "smooth" })} className="bg-white text-black px-6 py-2.5 rounded flex items-center gap-2 font-semibold hover:bg-gray-200 transition">
+              <Play size={20} className="fill-black" /> View Episodes
             </button>
 
             <WatchlistButton tmdbId={tv.id} type="tv" />
@@ -136,11 +137,16 @@ export default function TVDetailPage() {
                 );
               })()}
 
-              <div>
+              <div className="flex-1">
                 <h3 className="font-bold">
                   {ep.episode_number}. {ep.name}
                 </h3>
-                <p className="text-sm text-gray-400">{ep.overview}</p>
+                <p className="text-sm text-gray-400 mt-1 line-clamp-2">{ep.overview}</p>
+                <div className="mt-3">
+                  <Link href={`/watch/${ep.id}?type=episode`} className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded text-sm font-semibold transition">
+                    <Play size={16} /> Play
+                  </Link>
+                </div>
               </div>
             </div>
           ))
